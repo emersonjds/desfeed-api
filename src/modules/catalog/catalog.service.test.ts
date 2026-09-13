@@ -30,6 +30,13 @@ const makeRepository = (overrides: Partial<NotebookRepository> = {}): NotebookRe
   listByStudent: async () => [],
   findById: async () => undefined,
   create: async (_studentId, input) => makeSummary(input.title),
+  loadTotals: async () => ({
+    globalRetentionPercent: null,
+    consolidatedConcepts: 0,
+    stabilityDays: null,
+  }),
+  loadScheduling: async () => [],
+  loadPeaks: async () => [],
   ...overrides,
 });
 
@@ -61,12 +68,31 @@ describe('catalog service', () => {
     expect(library.notebooks).toHaveLength(2);
   });
 
-  it('deixa nula a métrica que depende do agendamento', async () => {
-    const service = createCatalogService(makeRepository());
+  it('aplica o agendamento do aluno sobre o caderno correspondente', async () => {
+    const notebook = makeSummary('Biologia', 12);
+    const service = createCatalogService(
+      makeRepository({
+        listByStudent: async () => [notebook],
+        loadScheduling: async () => [
+          {
+            notebookId: notebook.id,
+            status: 'revisao-hoje',
+            retentionPercent: 74,
+            nextReviewLabel: 'Revisar hoje',
+            coverUrl: 'https://exemplo.test/figura.png',
+          },
+        ],
+      }),
+    );
+
     const library = await service.getLibrary(studentId);
-    expect(library.globalRetentionPercent).toBeNull();
-    expect(library.stabilityDays).toBeNull();
-    expect(library.peaks).toEqual([]);
+
+    expect(library.notebooks[0]).toMatchObject({
+      status: 'revisao-hoje',
+      retentionPercent: 74,
+      nextReviewLabel: 'Revisar hoje',
+      coverUrl: 'https://exemplo.test/figura.png',
+    });
   });
 
   it('devolve o detalhe do caderno com seus temas', async () => {
