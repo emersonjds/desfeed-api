@@ -23,6 +23,7 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   ANTHROPIC_API_KEY: blankAsUndefined(z.string().min(1).optional()),
   GEMINI_API_KEY: blankAsUndefined(z.string().min(1).optional()),
+  GEMINI_MODEL: blankAsUndefined(z.string().min(1).optional()),
 });
 
 export type Env = z.infer<typeof envSchema>;
