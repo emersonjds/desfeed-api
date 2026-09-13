@@ -114,6 +114,39 @@ const fetchWithRetry = async (url: string, init: RequestInit): Promise<Response>
   return response;
 };
 
+// O modelo às vezes devolve entidade HTML no meio do texto ("For&ccedil;a resultante"), e ela
+// chegaria crua na tela do aluno.
+const HTML_ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+  aacute: 'á', eacute: 'é', iacute: 'í', oacute: 'ó', uacute: 'ú',
+  Aacute: 'Á', Eacute: 'É', Iacute: 'Í', Oacute: 'Ó', Uacute: 'Ú',
+  atilde: 'ã', otilde: 'õ', Atilde: 'Ã', Otilde: 'Õ',
+  acirc: 'â', ecirc: 'ê', ocirc: 'ô', Acirc: 'Â', Ecirc: 'Ê', Ocirc: 'Ô',
+  ccedil: 'ç', Ccedil: 'Ç', agrave: 'à', Agrave: 'À',
+};
+
+const decodeEntities = (value: string): string =>
+  value
+    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code: string) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/&([a-zA-Z]+);/g, (match, name: string) => HTML_ENTITIES[name] ?? match);
+
+export const sanitizeGenerated = (result: GenerationResult): GenerationResult => ({
+  ...result,
+  cards: result.cards.map((card) => ({
+    ...card,
+    question: decodeEntities(card.question),
+    keyTerm: decodeEntities(card.keyTerm),
+    highlightTerm: decodeEntities(card.highlightTerm),
+    options: card.options.map((option) => ({ ...option, label: decodeEntities(option.label) })),
+  })),
+});
+
 interface ToolUseBlock {
   type: string;
   name?: string;
@@ -183,7 +216,7 @@ export const createAnthropicGenerator = (apiKey: string): CardGenerator => ({
         'O gerador devolveu cards fora do formato esperado.',
       );
     }
-    return parsed.data;
+    return sanitizeGenerated(parsed.data);
   },
 });
 
@@ -299,6 +332,6 @@ export const createGeminiGenerator = (apiKey: string): CardGenerator => ({
         'O gerador devolveu cards fora do formato esperado.',
       );
     }
-    return parsed.data;
+    return sanitizeGenerated(parsed.data);
   },
 });
