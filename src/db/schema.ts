@@ -1,7 +1,9 @@
 import {
+  doublePrecision,
   index,
   integer,
   jsonb,
+  primaryKey,
   pgEnum,
   pgTable,
   text,
@@ -17,6 +19,9 @@ export const cardStatus = pgEnum('card_status', [
   'under_review',
 ]);
 export const cardSource = pgEnum('card_source', ['ai', 'teacher']);
+export const reviewRating = pgEnum('review_rating', ['again', 'hard', 'good', 'easy']);
+export const reviewOrigin = pgEnum('review_origin', ['feed', 'sala']);
+
 export const reportReason = pgEnum('report_reason', [
   'factualmente-errado',
   'fora-do-tema',
@@ -39,6 +44,9 @@ export const students = pgTable('students', {
   id: uuid('id').primaryKey().defaultRandom(),
   displayName: text('display_name').notNull(),
   timezone: text('timezone').notNull().default('America/Sao_Paulo'),
+  dailyGoal: integer('daily_goal').notNull().default(20),
+  newCardsPerDay: integer('new_cards_per_day').notNull().default(10),
+  reminderTime: text('reminder_time').notNull().default('19:30'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -132,5 +140,63 @@ export const cardReports = pgTable(
   (table) => [
     uniqueIndex('card_reports_card_student_idx').on(table.cardId, table.studentId),
     index('card_reports_reason_idx').on(table.reason, table.createdAt),
+  ],
+);
+
+export const cardStates = pgTable(
+  'card_states',
+  {
+    studentId: uuid('student_id')
+      .notNull()
+      .references(() => students.id, { onDelete: 'cascade' }),
+    cardId: uuid('card_id')
+      .notNull()
+      .references(() => cards.id, { onDelete: 'cascade' }),
+    due: timestamp('due', { withTimezone: true }).notNull(),
+    stability: doublePrecision('stability').notNull(),
+    difficulty: doublePrecision('difficulty').notNull(),
+    elapsedDays: doublePrecision('elapsed_days').notNull(),
+    scheduledDays: doublePrecision('scheduled_days').notNull(),
+    learningSteps: integer('learning_steps').notNull(),
+    reps: integer('reps').notNull(),
+    lapses: integer('lapses').notNull(),
+    state: integer('state').notNull(),
+    lastReview: timestamp('last_review', { withTimezone: true }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.studentId, table.cardId] }),
+    index('card_states_student_due_idx').on(table.studentId, table.due),
+  ],
+);
+
+export const reviewLogs = pgTable(
+  'review_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    studentId: uuid('student_id')
+      .notNull()
+      .references(() => students.id, { onDelete: 'cascade' }),
+    cardId: uuid('card_id')
+      .notNull()
+      .references(() => cards.id, { onDelete: 'cascade' }),
+    cardVersion: integer('card_version').notNull(),
+    rating: reviewRating('rating').notNull(),
+    origin: reviewOrigin('origin').notNull().default('feed'),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }).notNull(),
+    previousState: integer('previous_state').notNull(),
+    previousDue: timestamp('previous_due', { withTimezone: true }).notNull(),
+    nextDue: timestamp('next_due', { withTimezone: true }).notNull(),
+    elapsedDays: doublePrecision('elapsed_days').notNull(),
+    scheduledDays: doublePrecision('scheduled_days').notNull(),
+    xpGained: integer('xp_gained').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('review_logs_student_card_moment_idx').on(
+      table.studentId,
+      table.cardId,
+      table.reviewedAt,
+    ),
+    index('review_logs_student_reviewed_idx').on(table.studentId, table.reviewedAt),
   ],
 );
