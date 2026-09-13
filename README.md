@@ -1,7 +1,7 @@
-# desfeed-api
+# memfeed-api
 
-Backend do Desfeed — Node + Fastify + Zod + Drizzle + PostgreSQL. Serve o app do aluno
-(`desfeed-app`) e o painel do professor (`desfeed-web`, fase 2) pelo mesmo contrato OpenAPI.
+Backend do Memfeed — Node + Fastify + Zod + Drizzle + PostgreSQL. Serve o app do aluno
+(`memfeed-app`) e o painel do professor (`memfeed-web`, fase 2) pelo mesmo contrato OpenAPI.
 
 ## Rodar local
 

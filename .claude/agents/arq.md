@@ -1,7 +1,7 @@
 ---
 name: arq
 description: >-
-  Arquiteto da desfeed-api. Use antes de escrever código quando a demanda mexe em modelo de
+  Arquiteto da memfeed-api. Use antes de escrever código quando a demanda mexe em modelo de
   dados, contrato entre app e painel, regra de conflito de sincronização, fronteira de slice
   ou decisão que custa caro para desfazer. Produz spec em docs/specs/ com alternativas
   nomeadas e uma recomendação. Não implementa.

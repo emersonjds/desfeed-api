@@ -4,8 +4,8 @@ import { cardReports, cardVersions, cards, notebooks, themes } from '../../db/sc
 import type { Card, CardContent, CardStatus, ReportBody, Theme } from './cards.schemas.js';
 
 export interface CardRepository {
-  findThemeOwner: (themeId: string) => Promise<string | undefined>;
-  findNotebookOwner: (notebookId: string) => Promise<string | undefined>;
+  findThemeOwner: (themeId: string) => Promise<string | null | undefined>;
+  findNotebookOwner: (notebookId: string) => Promise<string | null | undefined>;
   createTheme: (notebookId: string, title: string) => Promise<Theme>;
   createCard: (themeId: string, content: CardContent, status: CardStatus) => Promise<Card>;
   addVersion: (cardId: string, content: CardContent) => Promise<Card | undefined>;

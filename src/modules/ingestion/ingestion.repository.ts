@@ -9,7 +9,7 @@ export interface StoredCard {
 }
 
 export interface IngestionRepository {
-  findNotebookOwner: (notebookId: string) => Promise<string | undefined>;
+  findNotebookOwner: (notebookId: string) => Promise<string | null | undefined>;
   findOrCreateTheme: (notebookId: string, title: string) => Promise<string>;
   saveGenerated: (themeId: string, generated: GeneratedCard) => Promise<StoredCard>;
 }
