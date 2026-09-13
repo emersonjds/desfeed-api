@@ -6,3 +6,9 @@ export const studentHeader = z.object({
 });
 
 export type StudentHeader = z.infer<typeof studentHeader>;
+
+export const teacherHeader = z.object({
+  'x-teacher-id': z.string().uuid(),
+});
+
+export type TeacherHeader = z.infer<typeof teacherHeader>;

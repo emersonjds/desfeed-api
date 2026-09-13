@@ -12,7 +12,12 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
 import type { Database } from './db/client.js';
+import { cardRoutes } from './modules/catalog/cards.routes.js';
 import { catalogRoutes } from './modules/catalog/catalog.routes.js';
+import { gamificationRoutes } from './modules/gamification/gamification.routes.js';
+import type { CardGenerator } from './modules/ingestion/card-generator.js';
+import { ingestionRoutes } from './modules/ingestion/ingestion.routes.js';
+import { schedulingRoutes } from './modules/scheduling/scheduling.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { asDatabaseHttpError, HttpError } from './shared/http/errors.js';
 
@@ -24,6 +29,7 @@ declare module 'fastify' {
 
 export interface AppOptions {
   db: Database;
+  cardGenerator?: CardGenerator | undefined;
   corsOrigins?: string[];
   publicUrl?: string;
   logLevel?: string;
@@ -85,7 +91,11 @@ export const buildApp = async (options: AppOptions): Promise<FastifyInstance> =>
       ],
       tags: [
         { name: 'health', description: 'Liveness do serviço.' },
-        { name: 'catalog', description: 'Cadernos, temas e cards.' },
+        { name: 'catalog', description: 'Cadernos, temas e cards, sob o prefixo /api.' },
+        { name: 'curation', description: 'Fila do professor: aprovar, rejeitar e editar card.' },
+        { name: 'scheduling', description: 'Fila do dia e registro de revisão, com FSRS no servidor.' },
+        { name: 'gamification', description: 'Sessão do dia, perfil, streak e liga. Contagem sempre do servidor.' },
+        { name: 'ingestion', description: 'Foto de caderno ou tema vira card pendente de curadoria.' },
       ],
     },
     transform: jsonSchemaTransform,
@@ -93,7 +103,11 @@ export const buildApp = async (options: AppOptions): Promise<FastifyInstance> =>
   await app.register(swaggerUi, { routePrefix: '/swagger' });
 
   await app.register(healthRoutes);
-  await app.register(catalogRoutes);
+  await app.register(catalogRoutes, { prefix: '/api' });
+  await app.register(cardRoutes, { prefix: '/api' });
+  await app.register(schedulingRoutes, { prefix: '/api' });
+  await app.register(gamificationRoutes, { prefix: '/api' });
+  await app.register(ingestionRoutes, { prefix: '/api', cardGenerator: options.cardGenerator });
 
   return app;
 };
