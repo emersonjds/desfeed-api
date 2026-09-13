@@ -20,10 +20,9 @@ pnpm dev
 ## Verificação
 
 ```bash
-pnpm type-check && pnpm lint && pnpm test:coverage
+pnpm type-check && pnpm lint && pnpm test:coverage   # unitários, limiar de 90% nas 4 métricas
+pnpm test:integration                                # precisa do Postgres do compose no ar
 ```
-
-Cobertura mínima travada em 90% nas quatro métricas.
 
 ## Banco
 
@@ -40,5 +39,13 @@ pnpm db:migrate    # aplica no DATABASE_URL
 Railway injeta `DATABASE_URL` e `PORT`; o boot falha cedo se faltar variável (Zod em `src/config/env.ts`).
 
 ```bash
-docker compose up --build   # sobe api + postgres como em produção
+docker compose up --build              # sobe api + postgres como em produção
+API_PORT=3100 docker compose up -d     # se a 3000 já estiver ocupada
 ```
+
+O container roda a migration antes de subir o servidor.
+
+## Documentação
+
+`docs/<contexto>/spec.md` (decisões e trade-offs) e `docs/<contexto>/plan.md` (etapas e
+verificação), um par por demanda. Ordem de execução em `docs/roadmap.md`.

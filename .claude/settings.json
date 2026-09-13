@@ -5,7 +5,12 @@
     "ponytail@ponytail": true
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["context-mode", "context7", "codebase-memory", "linear"],
+  "enabledMcpjsonServers": [
+    "context-mode",
+    "context7",
+    "codebase-memory",
+    "linear"
+  ],
   "permissions": {
     "allow": [
       "Bash(pnpm test*)",
@@ -15,12 +20,11 @@
       "Bash(pnpm format*)",
       "Bash(pnpm db:generate*)",
       "Bash(pnpm openapi*)",
-      "Bash(docker compose*)"
+      "Bash(docker compose*)",
+      "Bash(pnpm test:integration*)",
+      "Bash(git push*)"
     ],
     "deny": [
-      "Bash(git push*)",
-      "Bash(git push --force*)",
-      "Bash(git push -f*)",
       "Bash(git commit --amend*)",
       "Bash(git reset --hard*)",
       "Bash(git config --global*)",

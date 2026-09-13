@@ -5,6 +5,11 @@ moram aqui. Abrir `desfeed-api/` no editor já carrega os agents.
 
 Fonte da verdade do produto: `docs/briefing.md` (espelho do briefing do `desfeed-app`).
 Demandas: `docs/linear-backend-issues.md` (SPA-343 … SPA-365, time Spark no Linear).
+Ordem de execução: `docs/roadmap.md`.
+
+**Documentação é por contexto**: cada demanda tem uma pasta em `docs/<contexto>/` com `spec.md`
+(o porquê, as alternativas, o que fica fora) e `plan.md` (as etapas e a verificação de cada uma).
+`docs/scaffold/` é o exemplo pronto. Rationale mora ali — nunca em comentário de código.
 
 ## O que a API é
 
@@ -83,7 +88,7 @@ mesma combinação Fastify + Zod + Swagger e é referência de estrutura.
 
 **Comentário**: nunca o óbvio. Quanto mais explicação o código precisa, pior ele está — melhore
 o código. O comentário que sobrevive declara fato que o código não mostra: restrição externa,
-quirk de biblioteca, decisão de time. Rationale mora em `docs/specs/`, não no código.
+quirk de biblioteca, decisão de time. Rationale mora em `docs/<contexto>/spec.md`, não no código.
 Comentário passando de ~5% das linhas de um módulo é sintoma — releia o que dá para apagar.
 
 ## Segurança
@@ -121,6 +126,9 @@ Uma branch por demanda, criada a partir da `developer` atualizada. Implementa, v
 commita, faz merge em `developer`, apaga a branch. Só então começa a próxima.
 
 **`developer → master` é a mão do Emerson.** Nada entra em `master` por outro caminho.
+
+Reescrita de histórico (`rebase`, `filter-branch`, `push --force`) só com pedido explícito do
+Emerson, nunca por iniciativa própria.
 
 ## Agents
 
