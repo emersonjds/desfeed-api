@@ -46,7 +46,7 @@ const visibleCards = (studentId: string) => sql`
   join themes on themes.id = cards.theme_id
   join notebooks on notebooks.id = themes.notebook_id
   where cards.status = 'approved'
-    and (notebooks.student_id = ${studentId} or notebooks.teacher_id is not null)
+    and (notebooks.student_id = ${studentId} or (notebooks.teacher_id is not null and notebooks.student_id is null))
 `;
 
 export const createProgressService = (db: Database): ProgressService => ({
@@ -126,7 +126,7 @@ export const createProgressService = (db: Database): ProgressService => ({
         left join card_states on card_states.card_id = cards.id and card_states.student_id = ${studentId}
         left join review_logs on review_logs.card_id = cards.id and review_logs.student_id = ${studentId}
         where cards.status = 'approved'
-          and (notebooks.student_id = ${studentId} or notebooks.teacher_id is not null)
+          and (notebooks.student_id = ${studentId} or (notebooks.teacher_id is not null and notebooks.student_id is null))
         group by 1
         order by 2 desc
       `)

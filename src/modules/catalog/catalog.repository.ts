@@ -1,4 +1,4 @@
-import { and, asc, count, eq, isNotNull, or } from 'drizzle-orm';
+import { and, asc, count, eq, isNotNull, or, isNull } from 'drizzle-orm';
 import type { Database } from '../../db/client.js';
 import { cards, notebooks, themes } from '../../db/schema.js';
 import type {
@@ -31,7 +31,10 @@ const toSummary = (row: NotebookRow, cardCount: number): NotebookSummary => ({
 
 // O caderno da aula pertence ao professor, não ao aluno: ele aparece para a turma inteira.
 const visibleTo = (studentId: string) =>
-  or(eq(notebooks.studentId, studentId), isNotNull(notebooks.teacherId));
+  or(
+    eq(notebooks.studentId, studentId),
+    and(isNotNull(notebooks.teacherId), isNull(notebooks.studentId)),
+  );
 
 const withApprovedCardCount = (db: Database) =>
   db
