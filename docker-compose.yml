@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: desfeed
       POSTGRES_DB: desfeed
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - desfeed-pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -27,7 +27,7 @@ services:
       PORT: 3000
       DATABASE_URL: postgres://desfeed:desfeed@postgres:5432/desfeed
     ports:
-      - '3000:3000'
+      - '${API_PORT:-3000}:3000'
 
 volumes:
   desfeed-pgdata:
