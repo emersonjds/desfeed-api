@@ -53,6 +53,48 @@ const leadImageFrom = async (wiki: string, title: string): Promise<string | null
   return withoutTracking(thumbnail.source);
 };
 
+interface SearchPayload {
+  query?: {
+    pages?: Record<string, { imageinfo?: { thumburl?: string; width?: number; height?: number }[] }>;
+  };
+}
+
+// Verbete sem imagem principal, ou com retrato onde cabe diagrama, ainda costuma ter figura
+// no Commons. A busca só vale em inglês: o índice em português devolve foto de museu para
+// "Revolução Francesa pintura".
+const commonsSearch = async (title: string): Promise<string | null> => {
+  const params = new URLSearchParams({
+    action: 'query',
+    format: 'json',
+    generator: 'search',
+    gsrsearch: `${title} diagram`,
+    gsrnamespace: '6',
+    gsrlimit: '8',
+    prop: 'imageinfo',
+    iiprop: 'url|size',
+    iiurlwidth: String(THUMB_WIDTH),
+  });
+
+  const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`, {
+    headers: { 'user-agent': USER_AGENT },
+    signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+  });
+  if (!response.ok) return null;
+
+  const payload = (await response.json()) as SearchPayload;
+  const candidate = Object.values(payload.query?.pages ?? {})
+    .flatMap((page) => page.imageinfo ?? [])
+    .find(
+      (info) =>
+        info.thumburl &&
+        info.width &&
+        info.height &&
+        info.width / info.height >= MIN_ASPECT_RATIO,
+    );
+
+  return candidate?.thumburl ? withoutTracking(candidate.thumburl) : null;
+};
+
 export const findIllustration = async (title: string): Promise<string | null> => {
   for (const wiki of WIKIS) {
     try {
@@ -62,7 +104,12 @@ export const findIllustration = async (title: string): Promise<string | null> =>
       continue;
     }
   }
-  return null;
+
+  try {
+    return await commonsSearch(title);
+  } catch {
+    return null;
+  }
 };
 
 // A API da Wikimedia responde 429 a rajada de requisição paralela, e a falha é silenciosa:
