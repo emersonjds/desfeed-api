@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import type { Database } from '../../db/client.js';
 import { notFound } from '../../shared/http/errors.js';
 import type { CardGenerator } from '../ingestion/card-generator.js';
+import { resolveIllustrations } from '../../shared/media/wikimedia.js';
 import { emptyState, toContract } from '../scheduling/fsrs.js';
 import type { QueueCard } from '../scheduling/scheduling.schemas.js';
 import type {
@@ -59,7 +60,8 @@ export const createStudyService = (
         join cards on cards.theme_id = themes.id and cards.status = 'approved'
         left join card_states on card_states.card_id = cards.id and card_states.student_id = ${studentId}
         left join review_logs on review_logs.card_id = cards.id and review_logs.student_id = ${studentId}
-        where notebooks.student_id = ${studentId} or notebooks.teacher_id is not null
+        where notebooks.student_id = ${studentId}
+           or (notebooks.teacher_id is not null and notebooks.student_id is null)
         group by themes.id, 2, themes.title
         order by misses desc, due_in_days asc nulls last
         limit 6
@@ -70,7 +72,8 @@ export const createStudyService = (
       await db.execute(sql`
         select distinct coalesce(notebooks.subject, notebooks.title) as subject
         from notebooks
-        where notebooks.student_id = ${studentId} or notebooks.teacher_id is not null
+        where notebooks.student_id = ${studentId}
+           or (notebooks.teacher_id is not null and notebooks.student_id is null)
         order by 1
       `)
     ).rows as { subject: string }[];
@@ -133,6 +136,10 @@ export const createStudyService = (
       )[0]?.id;
     if (!themeId) throw new Error('theme lookup failed');
 
+    const illustrations = await resolveIllustrations(
+      generated.cards.map((card) => card.illustration ?? ''),
+    );
+
     const now = new Date();
     const cards: QueueCard[] = [];
 
@@ -146,13 +153,15 @@ export const createStudyService = (
       ).rows as { id: string }[];
       if (!card) continue;
 
+      const imageUrl = illustrations.get(generatedCard.illustration ?? '') ?? null;
+
       await db.execute(sql`
         insert into card_versions
-          (card_id, version, question, key_term, highlight_term, options, correct_option_id)
+          (card_id, version, question, key_term, highlight_term, options, correct_option_id, image_url)
         values (
           ${card.id}, 1, ${generatedCard.question}, ${generatedCard.keyTerm},
           ${generatedCard.highlightTerm}, ${JSON.stringify(generatedCard.options)}::jsonb,
-          ${generatedCard.correctOptionId}
+          ${generatedCard.correctOptionId}, ${imageUrl}
         )
       `);
 
@@ -161,7 +170,7 @@ export const createStudyService = (
         origin: { kind: 'proprio', theme: body.theme },
         subject: body.subject,
         chapter: body.theme,
-        imageUrl: '',
+        imageUrl: imageUrl ?? '',
         question: generatedCard.question,
         keyTerm: generatedCard.keyTerm,
         highlightTerm: generatedCard.highlightTerm,

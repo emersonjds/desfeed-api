@@ -21,15 +21,32 @@ export const createCatalogService = (repository: NotebookRepository): CatalogSer
   },
 
   getLibrary: async (studentId) => {
-    const notebooks = await repository.listByStudent(studentId);
+    const [notebooks, totals, scheduling, peaks] = await Promise.all([
+      repository.listByStudent(studentId),
+      repository.loadTotals(studentId),
+      repository.loadScheduling(studentId),
+      repository.loadPeaks(studentId),
+    ]);
+
+    const schedulingByNotebook = new Map(scheduling.map((row) => [row.notebookId, row]));
     const totalConcepts = notebooks.reduce((total, notebook) => total + notebook.cardCount, 0);
+
     return {
-      globalRetentionPercent: null,
-      consolidatedConcepts: 0,
+      ...totals,
       totalConcepts,
-      stabilityDays: null,
-      notebooks,
-      peaks: [],
+      notebooks: notebooks.map((notebook) => {
+        const row = schedulingByNotebook.get(notebook.id);
+        if (!row) return notebook;
+
+        return {
+          ...notebook,
+          coverUrl: row.coverUrl ?? notebook.coverUrl,
+          status: row.status,
+          retentionPercent: row.retentionPercent,
+          nextReviewLabel: row.nextReviewLabel,
+        };
+      }),
+      peaks,
     };
   },
 

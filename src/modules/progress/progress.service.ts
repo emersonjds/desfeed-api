@@ -46,7 +46,7 @@ const visibleCards = (studentId: string) => sql`
   join themes on themes.id = cards.theme_id
   join notebooks on notebooks.id = themes.notebook_id
   where cards.status = 'approved'
-    and (notebooks.student_id = ${studentId} or notebooks.teacher_id is not null)
+    and (notebooks.student_id = ${studentId} or (notebooks.teacher_id is not null and notebooks.student_id is null))
 `;
 
 export const createProgressService = (db: Database): ProgressService => ({
@@ -79,12 +79,19 @@ export const createProgressService = (db: Database): ProgressService => ({
     });
 
     const FREEZES = 2;
+    // O dia mais antigo com registro é onde o histórico começa, não uma folga: sem esse limite
+    // a borda do histórico consome as folgas e a tela mostra "0 folgas" numa sequência intacta.
+    const oldestDay = daily.at(-1)?.day ?? dayKey(now);
+
     let streakDays = 0;
     let freezesSpent = 0;
-    for (let offset = 0; offset < 60; offset += 1) {
+    for (let offset = 0; offset < 90; offset += 1) {
       const date = new Date(now);
       date.setDate(date.getDate() - offset);
-      const reviews = reviewsByDay.get(dayKey(date)) ?? 0;
+      const day = dayKey(date);
+      if (day < oldestDay) break;
+
+      const reviews = reviewsByDay.get(day) ?? 0;
       if (reviews > 0) {
         streakDays += 1;
         continue;
@@ -126,7 +133,7 @@ export const createProgressService = (db: Database): ProgressService => ({
         left join card_states on card_states.card_id = cards.id and card_states.student_id = ${studentId}
         left join review_logs on review_logs.card_id = cards.id and review_logs.student_id = ${studentId}
         where cards.status = 'approved'
-          and (notebooks.student_id = ${studentId} or notebooks.teacher_id is not null)
+          and (notebooks.student_id = ${studentId} or (notebooks.teacher_id is not null and notebooks.student_id is null))
         group by 1
         order by 2 desc
       `)

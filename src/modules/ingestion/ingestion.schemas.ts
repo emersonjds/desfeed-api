@@ -15,6 +15,8 @@ export const generatedCard = z.object({
   question: z.string().trim().min(1).max(400),
   keyTerm: z.string().trim().min(1).max(120),
   highlightTerm: z.string().trim().min(1).max(120),
+  // Título de verbete da Wikipédia, não frase de busca: é assim que a figura é encontrada.
+  illustration: z.string().trim().min(1).max(120).optional(),
   options: z
     .array(z.object({ id: optionId, label: z.string().trim().min(1).max(200) }))
     .length(4),

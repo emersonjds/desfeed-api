@@ -78,6 +78,14 @@ const cardColumns = {
   teacherName: teachers.displayName,
 };
 
+// Caderno do professor sem aluno é da turma inteira; com aluno preenchido é reforço dirigido
+// e só aquele aluno enxerga. Sem a segunda metade, o reforço individual vaza para todo mundo.
+const visibleTo = (studentId: string) =>
+  or(
+    eq(notebooks.studentId, studentId),
+    and(isNotNull(notebooks.teacherId), isNull(notebooks.studentId)),
+  );
+
 const approvedCardsOf = (db: Database, studentId: string, extra?: SQL) =>
   db
     .select({ ...cardColumns, state: cardStates })
@@ -95,7 +103,7 @@ const approvedCardsOf = (db: Database, studentId: string, extra?: SQL) =>
     )
     .where(
       and(
-        or(eq(notebooks.studentId, studentId), isNotNull(notebooks.teacherId)),
+        visibleTo(studentId),
         eq(cards.status, 'approved'),
         extra,
       ),
