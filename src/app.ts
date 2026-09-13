@@ -14,7 +14,7 @@ import {
 import type { Database } from './db/client.js';
 import { catalogRoutes } from './modules/catalog/catalog.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
-import { HttpError } from './shared/http/errors.js';
+import { asDatabaseHttpError, HttpError } from './shared/http/errors.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -44,6 +44,12 @@ export const buildApp = async (options: AppOptions): Promise<FastifyInstance> =>
         error: 'validation_error',
         message: error.validation.map((issue) => issue.message).join('; '),
       });
+    }
+    const databaseError = asDatabaseHttpError(error);
+    if (databaseError) {
+      return reply
+        .code(databaseError.statusCode)
+        .send({ error: databaseError.error, message: databaseError.message });
     }
     if (error instanceof HttpError) {
       return reply.code(error.statusCode).send({ error: error.error, message: error.message });
