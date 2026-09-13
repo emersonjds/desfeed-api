@@ -2,7 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { errorResponse } from '../../shared/http/errors.js';
 import { studentHeader } from '../../shared/http/identity.js';
 import { createGamificationRepository } from './gamification.repository.js';
-import { profile, ranking, sessionToday, updateGoalBody } from './gamification.schemas.js';
+import { profile, sessionToday, updateGoalBody } from './gamification.schemas.js';
 import { createGamificationService } from './gamification.service.js';
 
 export const gamificationRoutes: FastifyPluginAsyncZod = async (app) => {
@@ -48,16 +48,4 @@ export const gamificationRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request) => service.updatePreferences(request.headers['x-student-id'], request.body),
   );
 
-  app.get(
-    '/ranking',
-    {
-      schema: {
-        tags: ['gamification'],
-        summary: 'Liga da semana com apuração na virada, promoção e rebaixamento.',
-        headers: studentHeader,
-        response: { 200: ranking, 404: errorResponse },
-      },
-    },
-    async (request) => service.getRanking(request.headers['x-student-id'], new Date()),
-  );
 };
