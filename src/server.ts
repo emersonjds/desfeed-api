@@ -1,11 +1,13 @@
 import { buildApp } from './app.js';
 import { loadEnv } from './config/env.js';
 import { createDatabase } from './db/client.js';
+import { createAnthropicGenerator } from './modules/ingestion/card-generator.js';
 
 const env = loadEnv();
 const { db, pool } = createDatabase(env.DATABASE_URL);
 const app = await buildApp({
   db,
+  ...(env.ANTHROPIC_API_KEY ? { cardGenerator: createAnthropicGenerator(env.ANTHROPIC_API_KEY) } : {}),
   corsOrigins: env.CORS_ORIGINS,
   ...(env.PUBLIC_URL ? { publicUrl: env.PUBLIC_URL } : {}),
   logLevel: env.LOG_LEVEL,
