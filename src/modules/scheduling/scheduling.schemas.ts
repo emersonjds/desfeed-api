@@ -18,8 +18,14 @@ export const cardFsrs = z.object({
   last_review: z.string().datetime().optional(),
 });
 
+export const cardOrigin = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('turma'), teacher: z.string(), lesson: z.string() }),
+  z.object({ kind: z.literal('proprio'), theme: z.string() }),
+]);
+
 export const queueCard = cardContent.omit({ imageUrl: true }).extend({
   id: z.string().uuid(),
+  origin: cardOrigin,
   subject: z.string(),
   chapter: z.string(),
   imageUrl: z.string(),
@@ -48,6 +54,7 @@ export const submitReviewResponse = z.object({
 
 export type Rating = z.infer<typeof rating>;
 export type CardFsrs = z.infer<typeof cardFsrs>;
+export type CardOrigin = z.infer<typeof cardOrigin>;
 export type QueueCard = z.infer<typeof queueCard>;
 export type SubmitReviewBody = z.infer<typeof submitReviewBody>;
 export type SubmitReviewResponse = z.infer<typeof submitReviewResponse>;
