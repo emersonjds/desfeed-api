@@ -14,6 +14,7 @@ import {
 import type { Database } from './db/client.js';
 import { cardRoutes } from './modules/catalog/cards.routes.js';
 import { catalogRoutes } from './modules/catalog/catalog.routes.js';
+import { schedulingRoutes } from './modules/scheduling/scheduling.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { asDatabaseHttpError, HttpError } from './shared/http/errors.js';
 
@@ -88,6 +89,7 @@ export const buildApp = async (options: AppOptions): Promise<FastifyInstance> =>
         { name: 'health', description: 'Liveness do serviço.' },
         { name: 'catalog', description: 'Cadernos, temas e cards, sob o prefixo /api.' },
         { name: 'curation', description: 'Fila do professor: aprovar, rejeitar e editar card.' },
+        { name: 'scheduling', description: 'Fila do dia e registro de revisão, com FSRS no servidor.' },
       ],
     },
     transform: jsonSchemaTransform,
@@ -97,6 +99,7 @@ export const buildApp = async (options: AppOptions): Promise<FastifyInstance> =>
   await app.register(healthRoutes);
   await app.register(catalogRoutes, { prefix: '/api' });
   await app.register(cardRoutes, { prefix: '/api' });
+  await app.register(schedulingRoutes, { prefix: '/api' });
 
   return app;
 };
