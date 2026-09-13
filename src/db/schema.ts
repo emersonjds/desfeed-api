@@ -20,6 +20,8 @@ export const cardStatus = pgEnum('card_status', [
   'under_review',
 ]);
 export const cardSource = pgEnum('card_source', ['ai', 'teacher']);
+export const roomStatus = pgEnum('room_status', ['aberta', 'em_andamento', 'encerrada']);
+
 export const leagueTier = pgEnum('league_tier', ['bronze', 'prata', 'ouro', 'diamante']);
 
 export const reviewRating = pgEnum('review_rating', ['again', 'hard', 'good', 'easy']);
@@ -231,3 +233,65 @@ export const studentLeagues = pgTable('student_leagues', {
   settledWeek: text('settled_week'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const liveRooms = pgTable(
+  'live_rooms',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    teacherId: uuid('teacher_id')
+      .notNull()
+      .references(() => teachers.id, { onDelete: 'cascade' }),
+    pin: text('pin').notNull(),
+    title: text('title').notNull(),
+    status: roomStatus('status').notNull().default('aberta'),
+    cardIds: jsonb('card_ids').$type<string[]>().notNull(),
+    currentIndex: integer('current_index').notNull().default(0),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    closedAt: timestamp('closed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('live_rooms_pin_idx').on(table.pin),
+    index('live_rooms_status_idx').on(table.status, table.expiresAt),
+  ],
+);
+
+export const roomParticipants = pgTable(
+  'room_participants',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    roomId: uuid('room_id')
+      .notNull()
+      .references(() => liveRooms.id, { onDelete: 'cascade' }),
+    studentId: uuid('student_id').references(() => students.id, { onDelete: 'set null' }),
+    guestKey: text('guest_key').notNull(),
+    displayName: text('display_name').notNull(),
+    joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('room_participants_room_guest_idx').on(table.roomId, table.guestKey)],
+);
+
+export const roomAnswers = pgTable(
+  'room_answers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    roomId: uuid('room_id')
+      .notNull()
+      .references(() => liveRooms.id, { onDelete: 'cascade' }),
+    participantId: uuid('participant_id')
+      .notNull()
+      .references(() => roomParticipants.id, { onDelete: 'cascade' }),
+    cardId: uuid('card_id')
+      .notNull()
+      .references(() => cards.id, { onDelete: 'cascade' }),
+    optionId: text('option_id').notNull(),
+    correct: boolean('correct').notNull(),
+    answeredAt: timestamp('answered_at', { withTimezone: true }).notNull(),
+    bridgedAt: timestamp('bridged_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('room_answers_participant_card_idx').on(table.participantId, table.cardId),
+    index('room_answers_room_card_idx').on(table.roomId, table.cardId),
+  ],
+);
