@@ -79,12 +79,19 @@ export const createProgressService = (db: Database): ProgressService => ({
     });
 
     const FREEZES = 2;
+    // O dia mais antigo com registro é onde o histórico começa, não uma folga: sem esse limite
+    // a borda do histórico consome as folgas e a tela mostra "0 folgas" numa sequência intacta.
+    const oldestDay = daily.at(-1)?.day ?? dayKey(now);
+
     let streakDays = 0;
     let freezesSpent = 0;
-    for (let offset = 0; offset < 60; offset += 1) {
+    for (let offset = 0; offset < 90; offset += 1) {
       const date = new Date(now);
       date.setDate(date.getDate() - offset);
-      const reviews = reviewsByDay.get(dayKey(date)) ?? 0;
+      const day = dayKey(date);
+      if (day < oldestDay) break;
+
+      const reviews = reviewsByDay.get(day) ?? 0;
       if (reviews > 0) {
         streakDays += 1;
         continue;
