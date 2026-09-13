@@ -16,6 +16,12 @@ retenção que o professor lê depois — nunca o acerto do dia da aula sozinho.
 ![Zod](https://img.shields.io/badge/Zod-4-3E67B1?style=flat-square&logo=zod&logoColor=white)
 ![FSRS](https://img.shields.io/badge/ts--fsrs-5.4.2-10B981?style=flat-square)
 ![OpenAPI](https://img.shields.io/badge/OpenAPI-3.1-6BA539?style=flat-square&logo=openapiinitiative&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-multi--stage-2496ED?style=flat-square&logo=docker&logoColor=white)
+
+[![API no ar](https://img.shields.io/badge/API-Railway-10B981?style=flat-square&logo=railway&logoColor=white)](https://memfeed-api-production.up.railway.app/health)
+[![Swagger](https://img.shields.io/badge/Swagger-/swagger-85EA2D?style=flat-square&logo=swagger&logoColor=black)](https://memfeed-api-production.up.railway.app/swagger)
+
+**[Swagger no ar](https://memfeed-api-production.up.railway.app/swagger)** · **[App do aluno](https://github.com/emersonjds/memfeed-app)** · **[Landing e painel](https://github.com/emersonjds/memfeed-web)**
 
 </div>
 
@@ -39,6 +45,8 @@ As duas caem na **mesma fila FSRS**. O que foi respondido na aula de terça volt
 7 e 16 misturado com o que o aluno pediu — é isso que faz ser um produto só.
 
 ## Rodar local
+
+Pré-requisitos: Node 22+, pnpm e Docker.
 
 ```bash
 cp .env.example .env
@@ -134,15 +142,49 @@ pnpm type-check && pnpm lint && pnpm test
 pnpm test:integration   # precisa do Postgres do compose no ar
 ```
 
-## Deploy — Railway
+## Docker
 
-`Dockerfile` multi-stage, `railway.json` com healthcheck em `/health`. Railway injeta
-`DATABASE_URL` e `PORT`; o boot falha cedo se faltar variável (Zod em `src/config/env.ts`).
+Tudo em um comando — API e banco, como em produção:
 
 ```bash
-docker compose up --build            # api + postgres como em produção
-API_PORT=3100 docker compose up -d   # se a 3000 estiver ocupada
+docker compose up --build
 ```
+
+O que sobe:
+
+| Serviço | Porta | Descrição |
+| --- | --- | --- |
+| `api` | `3000` | Build multi-stage do `Dockerfile`; roda a migration e só então inicia o servidor |
+| `postgres` | `5432` | Postgres 16 Alpine com healthcheck — a API só inicia depois do banco responder |
+
+Os dados vivem no volume `memfeed-pgdata`, então `docker compose down` não apaga nada;
+para zerar o banco, `docker compose down -v`.
+
+Variações úteis:
+
+```bash
+docker compose up -d                 # em segundo plano
+API_PORT=3100 docker compose up -d   # se a 3000 estiver ocupada
+docker compose logs -f api           # acompanhar o boot (migration + Fastify)
+docker compose down                  # parar tudo, preservando os dados
+```
+
+Para popular o banco do container com a turma de demonstração:
+
+```bash
+DATABASE_URL=postgres://desfeed:desfeed@localhost:5432/desfeed pnpm tsx scripts/seed.ts
+```
+
+O `Dockerfile` tem dois estágios: o primeiro compila o TypeScript, o segundo carrega só as
+dependências de produção e o `dist/` — a imagem final não conhece nem `tsc` nem devDependencies.
+O `CMD` roda `db/migrate.js` antes do servidor, então subir um container novo já deixa o
+schema em dia; a migration do Drizzle é idempotente e um redeploy não quebra nada.
+
+## Deploy — Railway
+
+O mesmo `Dockerfile` do compose, com `railway.json` apontando o healthcheck para `/health`.
+Railway injeta `DATABASE_URL` (referência ao Postgres do projeto, pela rede privada) e `PORT`;
+o boot falha cedo se faltar variável (Zod em `src/config/env.ts`).
 
 ## Repositórios
 
