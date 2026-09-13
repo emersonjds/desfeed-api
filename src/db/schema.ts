@@ -34,6 +34,18 @@ export const reportReason = pgEnum('report_reason', [
   'duplicado',
 ]);
 
+export const schoolClasses = pgTable(
+  'school_classes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    school: text('school').notNull(),
+    name: text('name').notNull(),
+    grade: text('grade').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('school_classes_school_name_idx').on(table.school, table.name)],
+);
+
 export const teachers = pgTable('teachers', {
   id: uuid('id').primaryKey().defaultRandom(),
   displayName: text('display_name').notNull(),
@@ -47,6 +59,7 @@ export interface CardOption {
 
 export const students = pgTable('students', {
   id: uuid('id').primaryKey().defaultRandom(),
+  classId: uuid('class_id').references(() => schoolClasses.id, { onDelete: 'set null' }),
   displayName: text('display_name').notNull(),
   timezone: text('timezone').notNull().default('America/Sao_Paulo'),
   dailyGoal: integer('daily_goal').notNull().default(20),
@@ -61,6 +74,7 @@ export const notebooks = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }),
     teacherId: uuid('teacher_id').references(() => teachers.id, { onDelete: 'set null' }),
+    classId: uuid('class_id').references(() => schoolClasses.id, { onDelete: 'set null' }),
     title: text('title').notNull(),
     subject: text('subject'),
     coverUrl: text('cover_url'),
