@@ -17,6 +17,7 @@ retenção que o professor lê depois — nunca o acerto do dia da aula sozinho.
 ![FSRS](https://img.shields.io/badge/ts--fsrs-5.4.2-10B981?style=flat-square)
 ![OpenAPI](https://img.shields.io/badge/OpenAPI-3.1-6BA539?style=flat-square&logo=openapiinitiative&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-multi--stage-2496ED?style=flat-square&logo=docker&logoColor=white)
+![Gemini](https://img.shields.io/badge/IA-Google_Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)
 
 [![API no ar](https://img.shields.io/badge/API-Railway-10B981?style=flat-square&logo=railway&logoColor=white)](https://memfeed-api-production.up.railway.app/health)
 [![Swagger](https://img.shields.io/badge/Swagger-/swagger-85EA2D?style=flat-square&logo=swagger&logoColor=black)](https://memfeed-api-production.up.railway.app/swagger)
@@ -63,7 +64,11 @@ pnpm dev
 | Swagger UI | http://localhost:3000/swagger |
 | Contrato | `pnpm openapi` exporta para `docs/openapi.json` |
 
-### Geração de cards
+### Geração de cards — Gemini integrado de verdade
+
+Em produção, quem escreve as questões é o **Google Gemini**: o app do aluno e o painel do
+professor chamam esta API, ela monta o prompt, valida a resposta do modelo contra JSON schema
+e só então o conteúdo vira card. Nenhum card chega ao aluno sem passar por esse parse.
 
 Precisa de **uma** chave, qualquer uma das duas. Sem chave, o serviço sobe e tudo funciona
 menos os endpoints de geração, que respondem `503` com mensagem explícita.
