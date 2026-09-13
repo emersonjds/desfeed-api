@@ -1,0 +1,30 @@
+{
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true,
+    "context-mode@context-mode": true,
+    "ponytail@ponytail": true
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": ["context-mode", "context7", "codebase-memory", "linear"],
+  "permissions": {
+    "allow": [
+      "Bash(pnpm test*)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm type-check*)",
+      "Bash(pnpm build*)",
+      "Bash(pnpm format*)",
+      "Bash(pnpm db:generate*)",
+      "Bash(pnpm openapi*)",
+      "Bash(docker compose*)"
+    ],
+    "deny": [
+      "Bash(git push*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git commit --amend*)",
+      "Bash(git reset --hard*)",
+      "Bash(git config --global*)",
+      "Bash(git config user.*)"
+    ]
+  }
+}
