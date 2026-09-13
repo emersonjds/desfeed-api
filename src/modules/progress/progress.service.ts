@@ -39,16 +39,6 @@ interface AtRiskRow {
   days: number;
 }
 
-const visibleCards = (studentId: string) => sql`
-  from cards
-  join card_versions on card_versions.card_id = cards.id
-   and card_versions.version = cards.current_version
-  join themes on themes.id = cards.theme_id
-  join notebooks on notebooks.id = themes.notebook_id
-  where cards.status = 'approved'
-    and (notebooks.student_id = ${studentId} or (notebooks.teacher_id is not null and notebooks.student_id is null))
-`;
-
 export const createProgressService = (db: Database): ProgressService => ({
   getProgress: async (studentId, now) => {
     const [student] = (

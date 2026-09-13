@@ -17,5 +17,10 @@ export default tseslint.config(
       eqeqeq: ['error', 'always'],
     },
   },
+  {
+    // Script de linha de comando: a saída padrão é a interface dele com quem o executa.
+    files: ['scripts/**/*.ts'],
+    rules: { 'no-console': 'off' },
+  },
   prettier,
 );
