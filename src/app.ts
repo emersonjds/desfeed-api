@@ -12,6 +12,7 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
 import type { Database } from './db/client.js';
+import { cardRoutes } from './modules/catalog/cards.routes.js';
 import { catalogRoutes } from './modules/catalog/catalog.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { asDatabaseHttpError, HttpError } from './shared/http/errors.js';
@@ -86,6 +87,7 @@ export const buildApp = async (options: AppOptions): Promise<FastifyInstance> =>
       tags: [
         { name: 'health', description: 'Liveness do serviço.' },
         { name: 'catalog', description: 'Cadernos, temas e cards, sob o prefixo /api.' },
+        { name: 'curation', description: 'Fila do professor: aprovar, rejeitar e editar card.' },
       ],
     },
     transform: jsonSchemaTransform,
@@ -94,6 +96,7 @@ export const buildApp = async (options: AppOptions): Promise<FastifyInstance> =>
 
   await app.register(healthRoutes);
   await app.register(catalogRoutes, { prefix: '/api' });
+  await app.register(cardRoutes, { prefix: '/api' });
 
   return app;
 };
