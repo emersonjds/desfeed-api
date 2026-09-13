@@ -20,12 +20,12 @@ describe('app configurado para produção', () => {
   it('usa a URL pública e a allowlist de CORS', async () => {
     const configured = await buildApp({
       db: unreachable.db,
-      corsOrigins: ['https://painel.desfeed.app'],
-      publicUrl: 'https://api.desfeed.app',
+      corsOrigins: ['https://painel.memfeed.app'],
+      publicUrl: 'https://api.memfeed.app',
       logLevel: 'silent',
     });
     await configured.ready();
-    expect(configured.swagger().servers?.[0]?.url).toBe('https://api.desfeed.app');
+    expect(configured.swagger().servers?.[0]?.url).toBe('https://api.memfeed.app');
 
     const blocked = await configured.inject({
       method: 'GET',
@@ -40,7 +40,7 @@ describe('app configurado para produção', () => {
 describe('app', () => {
   it('publica o OpenAPI com as rotas documentadas', () => {
     const document = app.swagger();
-    expect(document.info.title).toBe('Desfeed API');
+    expect(document.info.title).toBe('Memfeed API');
     expect(Object.keys(document.paths ?? {})).toEqual(
       expect.arrayContaining(['/health', '/api/notebooks', '/api/notebooks/{notebookId}']),
     );

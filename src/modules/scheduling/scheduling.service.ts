@@ -2,7 +2,12 @@ import { notFound } from '../../shared/http/errors.js';
 import { dayKeyIn, startOfDayIn } from '../../shared/time/timezone.js';
 import { emptyState, retrievabilityPercent, schedule, toContract } from './fsrs.js';
 import type { DueCard, SchedulingRepository } from './scheduling.repository.js';
-import type { QueueCard, SubmitReviewBody, SubmitReviewResponse } from './scheduling.schemas.js';
+import type {
+  CardOrigin,
+  QueueCard,
+  SubmitReviewBody,
+  SubmitReviewResponse,
+} from './scheduling.schemas.js';
 
 export interface SchedulingService {
   getQueue: (studentId: string, now: Date) => Promise<{ cards: QueueCard[] }>;
@@ -11,10 +16,16 @@ export interface SchedulingService {
 
 const QUEUE_LIMIT = 60;
 
+const originOf = (card: DueCard): CardOrigin =>
+  card.teacherName
+    ? { kind: 'turma', teacher: card.teacherName, lesson: card.chapter }
+    : { kind: 'proprio', theme: card.chapter };
+
 const toQueueCard = (card: DueCard, now: Date): QueueCard => {
   const state = card.state ?? emptyState(now);
   return {
     id: card.id,
+    origin: originOf(card),
     subject: card.subject,
     chapter: card.chapter,
     imageUrl: card.imageUrl,

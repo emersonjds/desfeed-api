@@ -1,4 +1,4 @@
-import { and, asc, count, eq, gte, isNull, lte, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, eq, gte, isNotNull, isNull, lte, or, sql, type SQL } from 'drizzle-orm';
 import type { Card as FsrsCard } from 'ts-fsrs';
 import type { Database } from '../../db/client.js';
 import {
@@ -9,6 +9,7 @@ import {
   notebooks,
   reviewLogs,
   students,
+  teachers,
   themes,
 } from '../../db/schema.js';
 import type { Rating } from './scheduling.schemas.js';
@@ -24,6 +25,7 @@ export interface DueCard {
   options: { id: 'A' | 'B' | 'C' | 'D'; label: string }[];
   correctOptionId: 'A' | 'B' | 'C' | 'D';
   version: number;
+  teacherName: string | null;
   state?: FsrsCard;
 }
 
@@ -73,6 +75,7 @@ const cardColumns = {
   options: cardVersions.options,
   correctOptionId: cardVersions.correctOptionId,
   version: cardVersions.version,
+  teacherName: teachers.displayName,
 };
 
 const approvedCardsOf = (db: Database, studentId: string, extra?: SQL) =>
@@ -85,11 +88,18 @@ const approvedCardsOf = (db: Database, studentId: string, extra?: SQL) =>
     )
     .innerJoin(themes, eq(themes.id, cards.themeId))
     .innerJoin(notebooks, eq(notebooks.id, themes.notebookId))
+    .leftJoin(teachers, eq(teachers.id, notebooks.teacherId))
     .leftJoin(
       cardStates,
       and(eq(cardStates.cardId, cards.id), eq(cardStates.studentId, studentId)),
     )
-    .where(and(eq(notebooks.studentId, studentId), eq(cards.status, 'approved'), extra));
+    .where(
+      and(
+        or(eq(notebooks.studentId, studentId), isNotNull(notebooks.teacherId)),
+        eq(cards.status, 'approved'),
+        extra,
+      ),
+    );
 
 type StateRow = typeof cardStates.$inferSelect;
 
@@ -123,6 +133,7 @@ const toDueCard = (row: CardRow): DueCard => ({
   options: row.options,
   correctOptionId: row.correctOptionId as DueCard['correctOptionId'],
   version: row.version,
+  teacherName: row.teacherName,
   ...(row.state ? { state: toFsrsCard(row.state) } : {}),
 });
 

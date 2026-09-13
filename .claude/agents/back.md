@@ -1,7 +1,7 @@
 ---
 name: back
 description: >-
-  Engenheiro backend dono da desfeed-api (Node / Fastify / Zod / Drizzle / PostgreSQL).
+  Engenheiro backend dono da memfeed-api (Node / Fastify / Zod / Drizzle / PostgreSQL).
   Use para endpoint, schema Zod, service, rota, contrato OpenAPI, gamificação e agendamento
   FSRS. Invoque para qualquer código dentro de src/modules/ e src/shared/.
 tools: Read, Grep, Glob, Write, Edit, Bash

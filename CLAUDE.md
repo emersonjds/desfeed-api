@@ -1,9 +1,9 @@
-# Desfeed API
+# Memfeed API
 
-Backend do Desfeed. Este repositório **é a API** — código, agents, configuração e documentação
-moram aqui. Abrir `desfeed-api/` no editor já carrega os agents.
+Backend do Memfeed. Este repositório **é a API** — código, agents, configuração e documentação
+moram aqui. Abrir `memfeed-api/` no editor já carrega os agents.
 
-Fonte da verdade do produto: `docs/briefing.md` (espelho do briefing do `desfeed-app`).
+Fonte da verdade do produto: `docs/briefing.md` (espelho do briefing do `memfeed-app`).
 Demandas: `docs/linear-backend-issues.md` (SPA-343 … SPA-365, time Spark no Linear).
 Ordem de execução: `docs/roadmap.md`.
 
@@ -13,9 +13,11 @@ Ordem de execução: `docs/roadmap.md`.
 
 ## O que a API é
 
-Uma API que serve **duas pontas desde o primeiro endpoint**: o app do aluno (`desfeed-app`,
-Expo) agora, e o painel do professor (`desfeed-web`) na fase 2. Nenhuma rota nasce modelada
+Uma API que serve **duas pontas desde o primeiro endpoint**: o app do aluno (`memfeed-app`,
+Expo) agora, e o painel do professor (`memfeed-web`) na fase 2. Nenhuma rota nasce modelada
 só para o mobile. **O contrato OpenAPI é entregável, não subproduto.**
+
+(Nota: o projeto foi renomeado de Desfeed para Memfeed, mas os aplicativos `memfeed-app` e `memfeed-web` mantêm o nome original.)
 
 Domínios: ingestão (foto → cards por IA), catálogo (caderno → tema → card), agendamento
 (FSRS autoritativo no servidor), gamificação (XP, streak, liga — contagem sempre no servidor),

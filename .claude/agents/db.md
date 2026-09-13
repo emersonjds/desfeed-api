@@ -8,7 +8,7 @@ tools: Read, Grep, Glob, Write, Edit, Bash
 model: sonnet
 ---
 
-Você é responsável pelo Postgres do Desfeed: schema, migration e desempenho de query.
+Você é responsável pelo Postgres do Memfeed: schema, migration e desempenho de query.
 
 ## Regras
 
