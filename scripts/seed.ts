@@ -265,20 +265,31 @@ const seedStudentHistory = async (): Promise<void> => {
     const accuracy = accuracyBySubject[subject] ?? 0.75;
 
     for (const [index, card] of cards.entries()) {
-      const reviewedAt = daysAgo(2 + ((index * 3) % 18));
       const rating = (index * 37) % 100 < accuracy * 100 ? 'good' : 'again';
       // Dois cards por matéria vencem hoje: a fila do dia abre misturando as seis matérias
       // e as duas origens, em vez de só o que o professor publicou.
       const dueDaysAgo = index < 2 ? 0 : -(3 + (index % 9));
 
-      await db.execute(sql`
-        insert into review_logs
-          (student_id, card_id, card_version, rating, origin, reviewed_at,
-           previous_state, previous_due, next_due, elapsed_days, scheduled_days, xp_gained)
-        values (${STUDENT_ID}, ${card.id}, 1, ${rating}, 'feed', ${reviewedAt.toISOString()},
-          1, ${reviewedAt.toISOString()}, ${daysAgo(dueDaysAgo).toISOString()}, 3, 7, 10)
-        on conflict do nothing
-      `);
+      // Duas passadas: uma no mês passado, pior, e uma nesta semana. A tela de Evolução
+      // compara as duas — sem a antiga ela mostra "no mês passado eram 0".
+      const lastMonthRating = (index * 53) % 100 < accuracy * 72 ? 'good' : 'again';
+      const passes = [
+        { at: daysAgo(33 + (index % 4)), rating: lastMonthRating },
+        { at: daysAgo(1 + (index % 6)), rating },
+      ];
+
+      for (const pass of passes) {
+        await db.execute(sql`
+          insert into review_logs
+            (student_id, card_id, card_version, rating, origin, reviewed_at,
+             previous_state, previous_due, next_due, elapsed_days, scheduled_days, xp_gained)
+          values (${STUDENT_ID}, ${card.id}, 1, ${pass.rating}, 'feed', ${pass.at.toISOString()},
+            1, ${pass.at.toISOString()}, ${daysAgo(dueDaysAgo).toISOString()}, 3, 7, 10)
+          on conflict do nothing
+        `);
+      }
+
+      const reviewedAt = passes[1]?.at ?? daysAgo(2);
 
       await db.execute(sql`
         insert into card_states
@@ -294,9 +305,11 @@ const seedStudentHistory = async (): Promise<void> => {
     }
   }
 
-  for (let offset = 0; offset < 16; offset += 1) {
+  // 26 dias: sequência curta demais faz a borda do histórico consumir as folgas e a tela
+  // mostrar "0 folgas" ao lado de uma sequência intacta.
+  for (let offset = 0; offset < 26; offset += 1) {
     const day = daysAgo(offset).toISOString().slice(0, 10);
-    const reviews = offset === 4 ? 0 : 14 + ((offset * 7) % 18);
+    const reviews = offset === 9 ? 0 : 14 + ((offset * 7) % 18);
     if (reviews === 0) continue;
     await db.execute(sql`
       insert into daily_progress (student_id, day, reviews, xp, goal, met_goal)
