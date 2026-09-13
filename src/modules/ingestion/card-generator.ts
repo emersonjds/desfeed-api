@@ -10,8 +10,11 @@ export interface CardGenerator {
   generate: (input: GenerationInput) => Promise<GenerationResult>;
 }
 
-const MODEL = 'claude-sonnet-5';
-const MESSAGES_URL = 'https://api.anthropic.com/v1/messages';
+const ANTHROPIC_MODEL = 'claude-sonnet-5';
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+
+const GEMINI_MODEL = 'gemini-3.6-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const SYSTEM_PROMPT = `Você gera cards de recuperação ativa para estudantes brasileiros do ensino médio.
 
@@ -82,6 +85,20 @@ const TOOL = {
   },
 } as const;
 
+// O provedor gratuito devolve 403 e 429 esporádicos sob concorrência — aqui são transitórios,
+// não falta de permissão. Repetir é seguro: nada é gravado antes da resposta do modelo.
+const RETRIABLE_STATUSES = new Set([403, 429, 500, 502, 503, 504]);
+
+const RETRY_DELAY_MS = 800;
+
+const fetchWithRetry = async (url: string, init: RequestInit): Promise<Response> => {
+  const first = await fetch(url, init);
+  if (!RETRIABLE_STATUSES.has(first.status)) return first;
+
+  await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+  return fetch(url, init);
+};
+
 interface ToolUseBlock {
   type: string;
   name?: string;
@@ -110,7 +127,7 @@ export const createAnthropicGenerator = (apiKey: string): CardGenerator => ({
         : 'Gere cards a partir do material acima.',
     });
 
-    const response = await fetch(MESSAGES_URL, {
+    const response = await fetchWithRetry(ANTHROPIC_URL, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -118,7 +135,7 @@ export const createAnthropicGenerator = (apiKey: string): CardGenerator => ({
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: ANTHROPIC_MODEL,
         max_tokens: 4096,
         system: SYSTEM_PROMPT,
         tools: [TOOL],
@@ -144,6 +161,119 @@ export const createAnthropicGenerator = (apiKey: string): CardGenerator => ({
     }
 
     const parsed = generationResult.safeParse(toolUse.input);
+    if (!parsed.success) {
+      throw new HttpError(
+        502,
+        'generation_invalid',
+        'O gerador devolveu cards fora do formato esperado.',
+      );
+    }
+    return parsed.data;
+  },
+});
+
+// O mesmo contrato do `TOOL` acima, no dialeto de schema do Gemini: tipos em caixa alta e
+// sem `minItems`/`maxItems`, que a API rejeita.
+const GEMINI_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    confidence: { type: 'STRING', enum: ['alta', 'media', 'baixa'] },
+    cards: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          format: {
+            type: 'STRING',
+            enum: [
+              'pergunta-direta',
+              'completar-frase',
+              'explicar-em-uma-linha',
+              'flashcard-reverso',
+            ],
+          },
+          theme: { type: 'STRING' },
+          question: { type: 'STRING' },
+          keyTerm: { type: 'STRING' },
+          highlightTerm: { type: 'STRING' },
+          options: {
+            type: 'ARRAY',
+            items: {
+              type: 'OBJECT',
+              properties: {
+                id: { type: 'STRING', enum: ['A', 'B', 'C', 'D'] },
+                label: { type: 'STRING' },
+              },
+              required: ['id', 'label'],
+            },
+          },
+          correctOptionId: { type: 'STRING', enum: ['A', 'B', 'C', 'D'] },
+        },
+        required: [
+          'format',
+          'theme',
+          'question',
+          'keyTerm',
+          'highlightTerm',
+          'options',
+          'correctOptionId',
+        ],
+      },
+    },
+  },
+  required: ['confidence', 'cards'],
+} as const;
+
+interface GeminiPayload {
+  candidates?: { content?: { parts?: { text?: string }[] } }[];
+}
+
+const geminiImagePart = (imageUri: string): Record<string, unknown> => {
+  const dataUri = /^data:(image\/[a-z]+);base64,(.+)$/.exec(imageUri);
+  if (!dataUri) {
+    throw new HttpError(
+      400,
+      'image_not_supported',
+      'Este provedor aceita imagem apenas embutida em base64.',
+    );
+  }
+  return { inlineData: { mimeType: dataUri[1], data: dataUri[2] } };
+};
+
+export const createGeminiGenerator = (apiKey: string): CardGenerator => ({
+  generate: async (input) => {
+    const parts: Record<string, unknown>[] = [];
+    if (input.imageUri) parts.push(geminiImagePart(input.imageUri));
+    parts.push({
+      text: input.topic
+        ? `Gere cards sobre o tema: ${input.topic}`
+        : 'Gere cards a partir do material acima.',
+    });
+
+    const response = await fetchWithRetry(GEMINI_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ role: 'user', parts }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: GEMINI_RESPONSE_SCHEMA,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new HttpError(502, 'generation_failed', 'O gerador de cards não respondeu.');
+    }
+
+    const payload = (await response.json()) as GeminiPayload;
+    const text = payload.candidates?.[0]?.content?.parts?.find((part) => part.text)?.text;
+    if (!text) {
+      throw new HttpError(502, 'generation_invalid', 'O gerador devolveu resposta vazia.');
+    }
+
+    const parsed = generationResult.safeParse(JSON.parse(text));
     if (!parsed.success) {
       throw new HttpError(
         502,
