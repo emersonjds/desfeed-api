@@ -127,6 +127,9 @@ commita, faz merge em `developer`, apaga a branch. Só então começa a próxima
 
 **`developer → master` é a mão do Emerson.** Nada entra em `master` por outro caminho.
 
+Reescrita de histórico (`rebase`, `filter-branch`, `push --force`) só com pedido explícito do
+Emerson, nunca por iniciativa própria.
+
 ## Agents
 
 `.claude/agents/`: `arq` · `back` · `db` · `ia` · `realtime` · `qa` · `redteam` · `scribe`.
