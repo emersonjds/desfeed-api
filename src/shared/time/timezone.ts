@@ -34,3 +34,22 @@ export const dayKeyIn = (moment: Date, timezone: string): string => {
   const { year, month, day } = partsIn(moment, timezone);
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export const shiftDayKey = (dayKey: string, days: number): string => {
+  const shifted = new Date(`${dayKey}T00:00:00.000Z`).getTime() + days * DAY_MS;
+  return new Date(shifted).toISOString().slice(0, 10);
+};
+
+// Semana começa na segunda-feira: é a virada que o aluno enxerga na liga.
+export const weekDayKeys = (dayKey: string): string[] => {
+  const weekday = (new Date(`${dayKey}T00:00:00.000Z`).getUTCDay() + 6) % 7;
+  const monday = shiftDayKey(dayKey, -weekday);
+  return Array.from({ length: 7 }, (_, index) => shiftDayKey(monday, index));
+};
+
+export const daysUntilEndOfWeek = (dayKey: string): number => {
+  const weekday = (new Date(`${dayKey}T00:00:00.000Z`).getUTCDay() + 6) % 7;
+  return 6 - weekday;
+};

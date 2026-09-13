@@ -5,6 +5,7 @@ import {
   cardStates,
   cardVersions,
   cards,
+  dailyProgress,
   notebooks,
   reviewLogs,
   students,
@@ -34,6 +35,8 @@ export interface StudentPreferences {
 
 export interface ReviewRecord {
   studentId: string;
+  day: string;
+  dailyGoal: number;
   cardId: string;
   cardVersion: number;
   rating: Rating;
@@ -202,6 +205,26 @@ export const createSchedulingRepository = (db: Database): SchedulingRepository =
         scheduledDays: record.next.scheduled_days,
         xpGained: record.xpGained,
       });
+
+      await tx
+        .insert(dailyProgress)
+        .values({
+          studentId: record.studentId,
+          day: record.day,
+          reviews: 1,
+          xp: record.xpGained,
+          goal: record.dailyGoal,
+          metGoal: record.dailyGoal <= 1,
+        })
+        .onConflictDoUpdate({
+          target: [dailyProgress.studentId, dailyProgress.day],
+          set: {
+            reviews: sql`${dailyProgress.reviews} + 1`,
+            xp: sql`${dailyProgress.xp} + ${record.xpGained}`,
+            metGoal: sql`${dailyProgress.reviews} + 1 >= ${dailyProgress.goal}`,
+            updatedAt: new Date(),
+          },
+        });
 
       await tx
         .insert(cardStates)
