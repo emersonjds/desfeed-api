@@ -44,6 +44,8 @@ export interface AppOptions {
 export const buildApp = async (options: AppOptions): Promise<FastifyInstance> => {
   const app = Fastify({
     logger: { level: options.logLevel ?? 'info' },
+    // Foto de caderno chega como data URI base64 no corpo; base64 infla ~33% sobre o arquivo.
+    bodyLimit: 8 * 1024 * 1024,
   }).withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);
