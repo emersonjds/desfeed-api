@@ -59,9 +59,8 @@ export const notebooks = pgTable(
   'notebooks',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    studentId: uuid('student_id')
-      .notNull()
-      .references(() => students.id, { onDelete: 'cascade' }),
+    studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }),
+    teacherId: uuid('teacher_id').references(() => teachers.id, { onDelete: 'set null' }),
     title: text('title').notNull(),
     subject: text('subject'),
     coverUrl: text('cover_url'),
@@ -71,6 +70,7 @@ export const notebooks = pgTable(
   },
   (table) => [
     index('notebooks_student_created_idx').on(table.studentId, table.createdAt),
+    index('notebooks_teacher_created_idx').on(table.teacherId, table.createdAt),
     uniqueIndex('notebooks_student_title_idx').on(table.studentId, table.title),
   ],
 );

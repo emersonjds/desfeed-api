@@ -50,6 +50,13 @@
       "when": 1789274814676,
       "tag": "0006_cool_next_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789276953417,
+      "tag": "0007_gifted_guardsmen",
+      "breakpoints": true
     }
   ]
 }

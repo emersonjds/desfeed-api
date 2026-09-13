@@ -1,4 +1,4 @@
-import { and, asc, count, eq } from 'drizzle-orm';
+import { and, asc, count, eq, isNotNull, or } from 'drizzle-orm';
 import type { Database } from '../../db/client.js';
 import { cards, notebooks, themes } from '../../db/schema.js';
 import type {
@@ -29,6 +29,10 @@ const toSummary = (row: NotebookRow, cardCount: number): NotebookSummary => ({
   nextReviewLabel: null,
 });
 
+// O caderno da aula pertence ao professor, não ao aluno: ele aparece para a turma inteira.
+const visibleTo = (studentId: string) =>
+  or(eq(notebooks.studentId, studentId), isNotNull(notebooks.teacherId));
+
 const withApprovedCardCount = (db: Database) =>
   db
     .select({ notebook: notebooks, cardCount: count(cards.id) })
@@ -40,21 +44,21 @@ const withApprovedCardCount = (db: Database) =>
 export const createNotebookRepository = (db: Database): NotebookRepository => ({
   findByStudentAndTitle: async (studentId, title) => {
     const [row] = await withApprovedCardCount(db)
-      .where(and(eq(notebooks.studentId, studentId), eq(notebooks.title, title)))
+      .where(and(visibleTo(studentId), eq(notebooks.title, title)))
       .limit(1);
     return row ? toSummary(row.notebook, row.cardCount) : undefined;
   },
 
   listByStudent: async (studentId) => {
     const rows = await withApprovedCardCount(db)
-      .where(eq(notebooks.studentId, studentId))
+      .where(visibleTo(studentId))
       .orderBy(asc(notebooks.title));
     return rows.map((row) => toSummary(row.notebook, row.cardCount));
   },
 
   findById: async (studentId, notebookId) => {
     const [row] = await withApprovedCardCount(db)
-      .where(and(eq(notebooks.studentId, studentId), eq(notebooks.id, notebookId)))
+      .where(and(visibleTo(studentId), eq(notebooks.id, notebookId)))
       .limit(1);
     if (!row) return undefined;
 
