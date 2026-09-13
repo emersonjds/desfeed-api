@@ -42,9 +42,9 @@ describe('app', () => {
     const document = app.swagger();
     expect(document.info.title).toBe('Desfeed API');
     expect(Object.keys(document.paths ?? {})).toEqual(
-      expect.arrayContaining(['/health', '/notebooks']),
+      expect.arrayContaining(['/health', '/api/notebooks', '/api/notebooks/{notebookId}']),
     );
-    expect(document.paths?.['/notebooks']?.post?.summary).toBeTruthy();
+    expect(document.paths?.['/api/notebooks']?.post?.summary).toBeTruthy();
   });
 
   it('reporta o banco como down sem derrubar o serviço', async () => {
@@ -54,7 +54,7 @@ describe('app', () => {
   });
 
   it('recusa requisição sem o header de aluno', async () => {
-    const response = await app.inject({ method: 'GET', url: '/notebooks' });
+    const response = await app.inject({ method: 'GET', url: '/api/notebooks' });
     expect(response.statusCode).toBe(400);
     expect(response.json().error).toBe('validation_error');
   });
@@ -62,7 +62,7 @@ describe('app', () => {
   it('recusa payload inválido na criação de caderno', async () => {
     const response = await app.inject({
       method: 'POST',
-      url: '/notebooks',
+      url: '/api/notebooks',
       headers: { 'x-student-id': '11111111-1111-4111-8111-111111111111' },
       payload: { title: '' },
     });
@@ -72,7 +72,7 @@ describe('app', () => {
   it('responde 500 sem vazar detalhe quando o banco está fora', async () => {
     const created = await app.inject({
       method: 'POST',
-      url: '/notebooks',
+      url: '/api/notebooks',
       headers: { 'x-student-id': '11111111-1111-4111-8111-111111111111' },
       payload: { title: 'Biologia', subject: 'Ciências' },
     });
@@ -81,7 +81,7 @@ describe('app', () => {
 
     const listed = await app.inject({
       method: 'GET',
-      url: '/notebooks?limit=5&cursor=2026-09-13T10:00:00.000Z',
+      url: '/api/notebooks',
       headers: { 'x-student-id': '11111111-1111-4111-8111-111111111111' },
     });
     expect(listed.statusCode).toBe(500);
@@ -90,7 +90,7 @@ describe('app', () => {
   it('devolve o status do Fastify para erro de cliente conhecido', async () => {
     const response = await app.inject({
       method: 'POST',
-      url: '/notebooks',
+      url: '/api/notebooks',
       headers: {
         'x-student-id': '11111111-1111-4111-8111-111111111111',
         'content-type': 'application/json',

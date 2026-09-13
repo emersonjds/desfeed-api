@@ -17,6 +17,8 @@ export class HttpError extends Error {
   }
 }
 
+export const notFound = (message: string): HttpError => new HttpError(404, 'not_found', message);
+
 export const conflict = (message: string): HttpError => new HttpError(409, 'conflict', message);
 
 const databaseViolations: Record<string, { statusCode: number; error: string; message: string }> = {

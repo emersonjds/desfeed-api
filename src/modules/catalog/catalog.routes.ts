@@ -4,9 +4,10 @@ import { studentHeader } from '../../shared/http/identity.js';
 import { createNotebookRepository } from './catalog.repository.js';
 import {
   createNotebookBody,
-  listNotebooksQuery,
-  listNotebooksResponse,
-  notebook,
+  notebookDetail,
+  notebookLibrary,
+  notebookParams,
+  notebookSummary,
 } from './catalog.schemas.js';
 import { createCatalogService } from './catalog.service.js';
 
@@ -21,7 +22,7 @@ export const catalogRoutes: FastifyPluginAsyncZod = async (app) => {
         summary: 'Cria um caderno para o aluno autenticado.',
         headers: studentHeader,
         body: createNotebookBody,
-        response: { 201: notebook, 409: errorResponse },
+        response: { 201: notebookSummary, 409: errorResponse },
       },
     },
     async (request, reply) => {
@@ -35,12 +36,26 @@ export const catalogRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['catalog'],
-        summary: 'Lista os cadernos do aluno, paginados por cursor de data.',
+        summary: 'Biblioteca do aluno: cadernos, métricas de retenção e picos de esquecimento.',
         headers: studentHeader,
-        querystring: listNotebooksQuery,
-        response: { 200: listNotebooksResponse },
+        response: { 200: notebookLibrary },
       },
     },
-    async (request) => service.listNotebooks(request.headers['x-student-id'], request.query),
+    async (request) => service.getLibrary(request.headers['x-student-id']),
+  );
+
+  app.get(
+    '/notebooks/:notebookId',
+    {
+      schema: {
+        tags: ['catalog'],
+        summary: 'Detalhe de um caderno com seus temas.',
+        headers: studentHeader,
+        params: notebookParams,
+        response: { 200: notebookDetail, 404: errorResponse },
+      },
+    },
+    async (request) =>
+      service.getNotebook(request.headers['x-student-id'], request.params.notebookId),
   );
 };

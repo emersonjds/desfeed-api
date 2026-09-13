@@ -19,6 +19,8 @@ export const notebooks = pgTable(
       .references(() => students.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     subject: text('subject'),
+    coverUrl: text('cover_url'),
+    sourceLabel: text('source_label').notNull().default('Caderno fotografado'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
