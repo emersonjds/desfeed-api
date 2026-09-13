@@ -85,7 +85,7 @@ export const buildApp = async (options: AppOptions): Promise<FastifyInstance> =>
       ],
       tags: [
         { name: 'health', description: 'Liveness do serviço.' },
-        { name: 'catalog', description: 'Cadernos, temas e cards.' },
+        { name: 'catalog', description: 'Cadernos, temas e cards, sob o prefixo /api.' },
       ],
     },
     transform: jsonSchemaTransform,
@@ -93,7 +93,7 @@ export const buildApp = async (options: AppOptions): Promise<FastifyInstance> =>
   await app.register(swaggerUi, { routePrefix: '/swagger' });
 
   await app.register(healthRoutes);
-  await app.register(catalogRoutes);
+  await app.register(catalogRoutes, { prefix: '/api' });
 
   return app;
 };

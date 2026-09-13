@@ -1,10 +1,11 @@
 import { sql } from 'drizzle-orm';
+import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { buildApp } from '../../src/app.js';
 import { createDatabase } from '../../src/db/client.js';
-import { students } from '../../src/db/schema.js';
+import { cards, students, themes } from '../../src/db/schema.js';
 import { createNotebookRepository } from '../../src/modules/catalog/catalog.repository.js';
 import { createCatalogService } from '../../src/modules/catalog/catalog.service.js';
-import { buildApp } from '../../src/app.js';
 
 const connectionString = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
 
@@ -13,55 +14,55 @@ describe.skipIf(!connectionString)('catálogo contra o Postgres', () => {
   const repository = createNotebookRepository(db);
   const service = createCatalogService(repository);
   let studentId = '';
+  let app: FastifyInstance;
 
   beforeAll(async () => {
     const [student] = await db.insert(students).values({ displayName: 'Aluno Teste' }).returning();
     studentId = student?.id ?? '';
+    app = await buildApp({ db, logLevel: 'silent' });
+    await app.ready();
   });
 
   afterAll(async () => {
     await db.execute(sql`delete from students where id = ${studentId}`);
+    await app.close();
     await pool.end();
   });
 
-  it('cria, encontra e pagina cadernos do aluno', async () => {
-    const primeiro = await service.createNotebook(studentId, {
+  it('cria cadernos e os devolve na biblioteca do aluno', async () => {
+    const biologia = await service.createNotebook(studentId, {
       title: 'Biologia',
       subject: 'Ciências',
+      sourceLabel: 'Foto de quadro-negro',
     });
-    expect(primeiro.subject).toBe('Ciências');
+    expect(biologia.subject).toBe('Ciências');
+    expect(biologia.sourceLabel).toBe('Foto de quadro-negro');
 
-    const segundo = await service.createNotebook(studentId, { title: 'História' });
-    expect(segundo.subject).toBeNull();
+    const historia = await service.createNotebook(studentId, { title: 'História' });
+    expect(historia.sourceLabel).toBe('Caderno fotografado');
 
-    const encontrado = await repository.findByStudentAndTitle(studentId, 'Biologia');
-    expect(encontrado?.id).toBe(primeiro.id);
-
-    const primeiraPagina = await service.listNotebooks(studentId, { limit: 1 });
-    expect(primeiraPagina.items).toHaveLength(1);
-    expect(primeiraPagina.nextCursor).not.toBeNull();
-
-    const segundaPagina = await service.listNotebooks(studentId, {
-      limit: 10,
-      cursor: primeiraPagina.nextCursor ?? '',
-    });
-    expect(segundaPagina.items.map((item) => item.title)).not.toContain(
-      primeiraPagina.items[0]?.title,
-    );
-    expect(segundaPagina.nextCursor).toBeNull();
+    const library = await service.getLibrary(studentId);
+    expect(library.notebooks.map((notebook) => notebook.title)).toEqual(['Biologia', 'História']);
+    expect(library.totalConcepts).toBe(0);
   });
 
-  it('devolve 422 quando o aluno do header não existe', async () => {
-    const app = await buildApp({ db, logLevel: 'silent' });
-    const response = await app.inject({
-      method: 'POST',
-      url: '/notebooks',
-      headers: { 'x-student-id': '99999999-9999-4999-8999-999999999999' },
-      payload: { title: 'Geografia' },
-    });
-    expect(response.statusCode).toBe(422);
-    expect(response.json().error).toBe('invalid_reference');
-    await app.close();
+  it('conta no caderno apenas o card aprovado', async () => {
+    const notebook = await service.createNotebook(studentId, { title: 'Física II' });
+    const [theme] = await db
+      .insert(themes)
+      .values({ notebookId: notebook.id, title: 'Termodinâmica' })
+      .returning();
+
+    await db.insert(cards).values([
+      { themeId: theme?.id ?? '', prompt: 'Ciclo de Carnot?', answer: 'n = 1 - T2/T1', status: 'approved' },
+      { themeId: theme?.id ?? '', prompt: 'Entropia?', answer: 'dS >= 0', status: 'pending' },
+    ]);
+
+    const detail = await service.getNotebook(studentId, notebook.id);
+    expect(detail.cardCount).toBe(1);
+    expect(detail.themes).toEqual([
+      { id: theme?.id, title: 'Termodinâmica', cardCount: 1 },
+    ]);
   });
 
   it('recusa caderno com título repetido para o mesmo aluno', async () => {
@@ -69,5 +70,26 @@ describe.skipIf(!connectionString)('catálogo contra o Postgres', () => {
     await expect(service.createNotebook(studentId, { title: 'Química' })).rejects.toMatchObject({
       statusCode: 409,
     });
+  });
+
+  it('devolve 404 no caderno que não é do aluno', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/notebooks/99999999-9999-4999-8999-999999999999',
+      headers: { 'x-student-id': studentId },
+    });
+    expect(response.statusCode).toBe(404);
+    expect(response.json().error).toBe('not_found');
+  });
+
+  it('devolve 422 quando o aluno do header não existe', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/notebooks',
+      headers: { 'x-student-id': '99999999-9999-4999-8999-999999999999' },
+      payload: { title: 'Geografia' },
+    });
+    expect(response.statusCode).toBe(422);
+    expect(response.json().error).toBe('invalid_reference');
   });
 });

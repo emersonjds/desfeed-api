@@ -12,7 +12,9 @@
     "/health": {
       "get": {
         "summary": "Liveness do serviço e da conexão com o Postgres.",
-        "tags": ["health"],
+        "tags": [
+          "health"
+        ],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -23,14 +25,22 @@
                   "properties": {
                     "status": {
                       "type": "string",
-                      "enum": ["ok"]
+                      "enum": [
+                        "ok"
+                      ]
                     },
                     "database": {
                       "type": "string",
-                      "enum": ["up", "down"]
+                      "enum": [
+                        "up",
+                        "down"
+                      ]
                     }
                   },
-                  "required": ["status", "database"],
+                  "required": [
+                    "status",
+                    "database"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -39,10 +49,12 @@
         }
       }
     },
-    "/notebooks": {
+    "/api/notebooks": {
       "post": {
         "summary": "Cria um caderno para o aluno autenticado.",
-        "tags": ["catalog"],
+        "tags": [
+          "catalog"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -59,9 +71,20 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 60
+                  },
+                  "coverUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "sourceLabel": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
                   }
                 },
-                "required": ["title"]
+                "required": [
+                  "title"
+                ]
               }
             }
           }
@@ -98,13 +121,50 @@
                       "nullable": true,
                       "type": "string"
                     },
-                    "createdAt": {
+                    "coverUrl": {
+                      "nullable": true,
                       "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      "format": "uri"
+                    },
+                    "sourceLabel": {
+                      "type": "string"
+                    },
+                    "cardCount": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "status": {
+                      "nullable": true,
+                      "type": "string",
+                      "enum": [
+                        "revisao-hoje",
+                        "estavel",
+                        "reforco"
+                      ]
+                    },
+                    "retentionPercent": {
+                      "nullable": true,
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "nextReviewLabel": {
+                      "nullable": true,
+                      "type": "string"
                     }
                   },
-                  "required": ["id", "title", "subject", "createdAt"],
+                  "required": [
+                    "id",
+                    "title",
+                    "subject",
+                    "coverUrl",
+                    "sourceLabel",
+                    "cardCount",
+                    "status",
+                    "retentionPercent",
+                    "nextReviewLabel"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -124,7 +184,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error", "message"],
+                  "required": [
+                    "error",
+                    "message"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -133,29 +196,193 @@
         }
       },
       "get": {
-        "summary": "Lista os cadernos do aluno, paginados por cursor de data.",
-        "tags": ["catalog"],
+        "summary": "Biblioteca do aluno: cadernos, métricas de retenção e picos de esquecimento.",
+        "tags": [
+          "catalog"
+        ],
         "parameters": [
           {
             "schema": {
-              "default": 20,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
-            "in": "query",
-            "name": "limit",
-            "required": false
-          },
+            "in": "header",
+            "name": "x-student-id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "globalRetentionPercent": {
+                      "nullable": true,
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "consolidatedConcepts": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "totalConcepts": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "stabilityDays": {
+                      "nullable": true,
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "notebooks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "subject": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "coverUrl": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uri"
+                          },
+                          "sourceLabel": {
+                            "type": "string"
+                          },
+                          "cardCount": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "status": {
+                            "nullable": true,
+                            "type": "string",
+                            "enum": [
+                              "revisao-hoje",
+                              "estavel",
+                              "reforco"
+                            ]
+                          },
+                          "retentionPercent": {
+                            "nullable": true,
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 100
+                          },
+                          "nextReviewLabel": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "subject",
+                          "coverUrl",
+                          "sourceLabel",
+                          "cardCount",
+                          "status",
+                          "retentionPercent",
+                          "nextReviewLabel"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "peaks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "whenLabel": {
+                            "type": "string"
+                          },
+                          "urgency": {
+                            "type": "string",
+                            "enum": [
+                              "alta",
+                              "media",
+                              "baixa"
+                            ]
+                          },
+                          "cardCount": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 9007199254740991
+                          },
+                          "detail": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "whenLabel",
+                          "urgency",
+                          "cardCount",
+                          "detail"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "globalRetentionPercent",
+                    "consolidatedConcepts",
+                    "totalConcepts",
+                    "stabilityDays",
+                    "notebooks",
+                    "peaks"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notebooks/{notebookId}": {
+      "get": {
+        "summary": "Detalhe de um caderno com seus temas.",
+        "tags": [
+          "catalog"
+        ],
+        "parameters": [
           {
             "schema": {
               "type": "string",
-              "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
-            "in": "query",
-            "name": "cursor",
-            "required": false
+            "in": "path",
+            "name": "notebookId",
+            "required": true
           },
           {
             "schema": {
@@ -176,7 +403,56 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "items": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "subject": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "coverUrl": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "sourceLabel": {
+                      "type": "string"
+                    },
+                    "cardCount": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "status": {
+                      "nullable": true,
+                      "type": "string",
+                      "enum": [
+                        "revisao-hoje",
+                        "estavel",
+                        "reforco"
+                      ]
+                    },
+                    "retentionPercent": {
+                      "nullable": true,
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "nextReviewLabel": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "themes": {
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -189,28 +465,57 @@
                           "title": {
                             "type": "string"
                           },
-                          "subject": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          "cardCount": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
                           }
                         },
-                        "required": ["id", "title", "subject", "createdAt"],
+                        "required": [
+                          "id",
+                          "title",
+                          "cardCount"
+                        ],
                         "additionalProperties": false
                       }
-                    },
-                    "nextCursor": {
-                      "nullable": true,
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     }
                   },
-                  "required": ["items", "nextCursor"],
+                  "required": [
+                    "id",
+                    "title",
+                    "subject",
+                    "coverUrl",
+                    "sourceLabel",
+                    "cardCount",
+                    "status",
+                    "retentionPercent",
+                    "nextReviewLabel",
+                    "createdAt",
+                    "themes"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -233,7 +538,7 @@
     },
     {
       "name": "catalog",
-      "description": "Cadernos, temas e cards."
+      "description": "Cadernos, temas e cards, sob o prefixo /api."
     }
   ]
 }

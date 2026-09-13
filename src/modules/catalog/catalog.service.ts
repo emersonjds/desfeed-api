@@ -1,15 +1,16 @@
-import { conflict } from '../../shared/http/errors.js';
+import { conflict, notFound } from '../../shared/http/errors.js';
 import type { NotebookRepository } from './catalog.repository.js';
 import type {
   CreateNotebookBody,
-  ListNotebooksQuery,
-  ListNotebooksResponse,
-  Notebook,
+  NotebookDetail,
+  NotebookLibrary,
+  NotebookSummary,
 } from './catalog.schemas.js';
 
 export interface CatalogService {
-  createNotebook: (studentId: string, input: CreateNotebookBody) => Promise<Notebook>;
-  listNotebooks: (studentId: string, query: ListNotebooksQuery) => Promise<ListNotebooksResponse>;
+  createNotebook: (studentId: string, input: CreateNotebookBody) => Promise<NotebookSummary>;
+  getLibrary: (studentId: string) => Promise<NotebookLibrary>;
+  getNotebook: (studentId: string, notebookId: string) => Promise<NotebookDetail>;
 }
 
 export const createCatalogService = (repository: NotebookRepository): CatalogService => ({
@@ -19,13 +20,22 @@ export const createCatalogService = (repository: NotebookRepository): CatalogSer
     return repository.create(studentId, input);
   },
 
-  listNotebooks: async (studentId, query) => {
-    const items = await repository.listByStudent(
-      studentId,
-      query.limit,
-      query.cursor ? new Date(query.cursor) : undefined,
-    );
-    const nextCursor = items.length === query.limit ? (items.at(-1)?.createdAt ?? null) : null;
-    return { items, nextCursor };
+  getLibrary: async (studentId) => {
+    const notebooks = await repository.listByStudent(studentId);
+    const totalConcepts = notebooks.reduce((total, notebook) => total + notebook.cardCount, 0);
+    return {
+      globalRetentionPercent: null,
+      consolidatedConcepts: 0,
+      totalConcepts,
+      stabilityDays: null,
+      notebooks,
+      peaks: [],
+    };
+  },
+
+  getNotebook: async (studentId, notebookId) => {
+    const notebook = await repository.findById(studentId, notebookId);
+    if (!notebook) throw notFound('Caderno não encontrado para este aluno.');
+    return notebook;
   },
 });
