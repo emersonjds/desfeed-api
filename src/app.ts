@@ -112,7 +112,12 @@ export const buildApp = async (options: AppOptions): Promise<FastifyInstance> =>
     },
     transform: jsonSchemaTransform,
   });
-  await app.register(swaggerUi, { routePrefix: '/swagger' });
+  await app.register(swaggerUi, {
+    routePrefix: '/swagger',
+    theme: {
+      css: [{ filename: 'no-topbar.css', content: '.swagger-ui .topbar { display: none }' }],
+    },
+  });
 
   await app.register(healthRoutes);
   await app.register(catalogRoutes, { prefix: '/api' });
