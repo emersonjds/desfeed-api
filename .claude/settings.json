@@ -22,14 +22,11 @@
       "Bash(pnpm openapi*)",
       "Bash(docker compose*)",
       "Bash(pnpm test:integration*)",
-      "Bash(git push origin developer*)",
-      "Bash(git push -u origin developer*)"
+      "Bash(git push*)"
     ],
     "deny": [
       "Bash(git push --force*)",
       "Bash(git push -f*)",
-      "Bash(git push origin master*)",
-      "Bash(git push origin HEAD:master*)",
       "Bash(git commit --amend*)",
       "Bash(git reset --hard*)",
       "Bash(git config --global*)",
