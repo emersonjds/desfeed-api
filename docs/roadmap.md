@@ -4,19 +4,22 @@ Ordem de execução das demandas de back do time Spark (Linear). Uma branch por 
 da `developer` atualizada; merge em `developer` ao terminar. Detalhe integral de cada issue em
 `docs/linear-backend-issues.md`.
 
+Cada demanda ganha uma pasta própria em `docs/<contexto>/` com `spec.md` e `plan.md`.
+`docs/scaffold/` é o par de referência.
+
 ## Estado
 
-| #       | Demanda                                       | Slice                               | Depende de       | Status  |
-| ------- | --------------------------------------------- | ----------------------------------- | ---------------- | ------- |
-| SPA-343 | Scaffold Fastify + Zod + Swagger + Postgres   | `config`, `db`, `shared`, `catalog` | —                | feito   |
-| SPA-363 | Catálogo: caderno, tema, card, curadoria      | `modules/catalog`                   | SPA-343          | próximo |
-| SPA-358 | Ingestão: foto/PDF → cards por IA             | `modules/ingestion`                 | SPA-363          | a fazer |
-| SPA-359 | Agendamento FSRS autoritativo e fila do dia   | `modules/scheduling`                | SPA-363          | a fazer |
-| SPA-361 | Sala ao vivo: PIN, ciclo de vida, socket      | `modules/live-room`                 | SPA-359          | a fazer |
-| SPA-362 | A ponte: resposta na sala alimenta o FSRS     | `modules/live-room`                 | SPA-359, SPA-361 | a fazer |
-| SPA-364 | Gamificação: XP, streak, meta, ligas          | `modules/gamification`              | SPA-359          | a fazer |
-| SPA-360 | Reconciliação offline da fila e das respostas | `modules/scheduling`                | SPA-359          | a fazer |
-| SPA-365 | Relatórios de turma agregados por design      | `modules/reports`                   | SPA-363, SPA-359 | a fazer |
+| #       | Demanda                                       | Slice                               | Documentação          | Depende de       | Status  |
+| ------- | --------------------------------------------- | ----------------------------------- | --------------------- | ---------------- | ------- |
+| SPA-343 | Scaffold Fastify + Zod + Swagger + Postgres   | `config`, `db`, `shared`, `catalog` | `docs/scaffold/`      | —                | feito   |
+| SPA-363 | Catálogo: caderno, tema, card, curadoria      | `modules/catalog`                   | `docs/catalogo/`      | SPA-343          | próximo |
+| SPA-358 | Ingestão: foto/PDF → cards por IA             | `modules/ingestion`                 | `docs/ingestao/`      | SPA-363          | a fazer |
+| SPA-359 | Agendamento FSRS autoritativo e fila do dia   | `modules/scheduling`                | `docs/agendamento/`   | SPA-363          | a fazer |
+| SPA-361 | Sala ao vivo: PIN, ciclo de vida, socket      | `modules/live-room`                 | `docs/sala-ao-vivo/`  | SPA-359          | a fazer |
+| SPA-362 | A ponte: resposta na sala alimenta o FSRS     | `modules/live-room`                 | `docs/ponte/`         | SPA-359, SPA-361 | a fazer |
+| SPA-364 | Gamificação: XP, streak, meta, ligas          | `modules/gamification`              | `docs/gamificacao/`   | SPA-359          | a fazer |
+| SPA-360 | Reconciliação offline da fila e das respostas | `modules/scheduling`                | `docs/reconciliacao/` | SPA-359          | a fazer |
+| SPA-365 | Relatórios de turma agregados por design      | `modules/reports`                   | `docs/relatorios/`    | SPA-363, SPA-359 | a fazer |
 
 ## O que o scaffold (SPA-343) entregou
 
@@ -33,6 +36,11 @@ da `developer` atualizada; merge em `developer` ao terminar. Detalhe integral de
 - Docker multi-stage + `railway.json` com healthcheck em `/health`; `docker compose` sobe api e
   Postgres juntos.
 - Vitest com limiar de cobertura travado em 90% nas quatro métricas.
+
+## O que o scaffold corrigiu depois do smoke test no container
+
+Violação de chave estrangeira saía como 500. Agora o erro do Postgres é traduzido na fronteira
+HTTP — 422 para referência inexistente, 409 para unicidade. Detalhe em `docs/scaffold/spec.md`.
 
 ## Decisões que ainda precisam de spec do `arq`
 
