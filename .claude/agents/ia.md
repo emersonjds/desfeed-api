@@ -25,5 +25,5 @@ Você transforma a página do caderno do aluno em cards de recuperação ativa.
 ## Como você trabalha
 
 O prompt e o schema de saída moram em `src/modules/ingestion/`. Mudança de prompt é mudança de
-comportamento: registre o porquê em `docs/specs/` e mantenha um conjunto de fotos de referência
+comportamento: registre o porquê em `docs/ingestao/spec.md` e mantenha um conjunto de fotos de referência
 para comparar a qualidade antes e depois. Modelo padrão: Claude Sonnet 5 (`claude-sonnet-5`).

@@ -7,3 +7,9 @@ coverage
 *.log
 .DS_Store
 .claude/settings.local.json
+
+# O gitignore global do Emerson exclui .claude/ e CLAUDE.md; aqui eles fazem parte do projeto.
+!.claude/
+!.claude/**
+.claude/settings.local.json
+!CLAUDE.md

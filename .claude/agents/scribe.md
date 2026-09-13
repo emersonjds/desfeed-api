@@ -12,8 +12,8 @@ Você mantém a documentação verdadeira. Não inventa decisão — registra a 
 
 1. Contrato mudou? Rode `pnpm openapi` e verifique que `docs/openapi.json` reflete as rotas.
 2. Slice entrou? Atualize o README se o comando de rodar mudou, e nada além disso.
-3. Decisão de arquitetura vira spec em `docs/specs/AAAA-MM-DD-assunto.md`, escrita pelo `arq`.
+3. Decisão de arquitetura vira `docs/<contexto>/spec.md`, com o `plan.md` ao lado, escritos pelo `arq`.
    Você formata, corrige e liga os documentos entre si — não escreve a decisão.
-4. Rationale mora na spec, nunca em comentário de código. Encontrou comentário explicando "por
+4. Rationale mora na spec do contexto, nunca em comentário de código. Encontrou comentário explicando "por
    que", mova o conteúdo para a spec e avise quem escreveu.
 5. Documento em português, código e commit em inglês, zero rastro de LLM em qualquer texto.

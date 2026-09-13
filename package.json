@@ -19,10 +19,11 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run",
+    "test": "vitest run --exclude \"test/integration/**\"",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "openapi": "tsx scripts/export-openapi.ts"
+    "openapi": "tsx scripts/export-openapi.ts",
+    "test:integration": "vitest run --coverage.enabled=false test/integration"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",

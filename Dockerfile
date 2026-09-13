@@ -18,4 +18,4 @@ COPY --from=build /app/dist ./dist
 COPY drizzle ./drizzle
 USER node
 EXPOSE 3000
-CMD ["node", "dist/src/server.js"]
+CMD ["sh", "-c", "node dist/src/db/migrate.js && node dist/src/server.js"]
