@@ -1,4 +1,5 @@
 import {
+  boolean,
   doublePrecision,
   index,
   integer,
@@ -19,6 +20,8 @@ export const cardStatus = pgEnum('card_status', [
   'under_review',
 ]);
 export const cardSource = pgEnum('card_source', ['ai', 'teacher']);
+export const leagueTier = pgEnum('league_tier', ['bronze', 'prata', 'ouro', 'diamante']);
+
 export const reviewRating = pgEnum('review_rating', ['again', 'hard', 'good', 'easy']);
 export const reviewOrigin = pgEnum('review_origin', ['feed', 'sala']);
 
@@ -200,3 +203,31 @@ export const reviewLogs = pgTable(
     index('review_logs_student_reviewed_idx').on(table.studentId, table.reviewedAt),
   ],
 );
+
+export const dailyProgress = pgTable(
+  'daily_progress',
+  {
+    studentId: uuid('student_id')
+      .notNull()
+      .references(() => students.id, { onDelete: 'cascade' }),
+    day: text('day').notNull(),
+    reviews: integer('reviews').notNull().default(0),
+    xp: integer('xp').notNull().default(0),
+    goal: integer('goal').notNull(),
+    metGoal: boolean('met_goal').notNull().default(false),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.studentId, table.day] }),
+    index('daily_progress_student_day_idx').on(table.studentId, table.day),
+  ],
+);
+
+export const studentLeagues = pgTable('student_leagues', {
+  studentId: uuid('student_id')
+    .primaryKey()
+    .references(() => students.id, { onDelete: 'cascade' }),
+  tier: leagueTier('tier').notNull().default('bronze'),
+  settledWeek: text('settled_week'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});

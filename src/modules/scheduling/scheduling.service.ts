@@ -1,5 +1,5 @@
 import { notFound } from '../../shared/http/errors.js';
-import { startOfDayIn } from '../../shared/time/timezone.js';
+import { dayKeyIn, startOfDayIn } from '../../shared/time/timezone.js';
 import { emptyState, retrievabilityPercent, schedule, toContract } from './fsrs.js';
 import type { DueCard, SchedulingRepository } from './scheduling.repository.js';
 import type { QueueCard, SubmitReviewBody, SubmitReviewResponse } from './scheduling.schemas.js';
@@ -51,6 +51,9 @@ export const createSchedulingService = (
 
   submitReview: async (studentId, body) => {
     const reviewedAt = new Date(body.reviewedAt);
+    const preferences = await repository.findPreferences(studentId);
+    if (!preferences) throw notFound('Aluno não encontrado.');
+
     const alreadyRecorded = await repository.findReview(studentId, body.cardId, reviewedAt);
     if (alreadyRecorded) {
       return {
@@ -67,6 +70,8 @@ export const createSchedulingService = (
 
     await repository.saveReview({
       studentId,
+      day: dayKeyIn(reviewedAt, preferences.timezone),
+      dailyGoal: preferences.dailyGoal,
       cardId: card.id,
       cardVersion: card.version,
       rating: body.rating,
