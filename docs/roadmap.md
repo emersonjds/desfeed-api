@@ -42,6 +42,11 @@ Cada demanda ganha uma pasta própria em `docs/<contexto>/` com `spec.md` e `pla
 Violação de chave estrangeira saía como 500. Agora o erro do Postgres é traduzido na fronteira
 HTTP — 422 para referência inexistente, 409 para unicidade. Detalhe em `docs/scaffold/spec.md`.
 
+## Próxima demanda
+
+SPA-358 (ingestão: foto vira card `pending`) ou SPA-359 (agendamento FSRS e fila do dia). A
+359 destrava mais tela do app — a fila é o feed.
+
 ## Decisões que ainda precisam de spec do `arq`
 
 - **Autenticação.** O scaffold identifica o aluno pelo header `x-student-id`; isso cai quando o
